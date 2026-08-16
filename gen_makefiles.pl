@@ -361,7 +361,7 @@ gen_charmonizer_makefiles.pl
 
 =head1 SYNOPSIS
 
-    gen_charmonizer_makefiles.pl - keeps the Makefiles in sync with the live tree.
+    gen_makefiles.pl - keeps the Makefiles in sync with the live tree.
 
 =head1 DESCRIPTION
 
