@@ -29,17 +29,28 @@
 #define CHAZ_OS_TARGET_PATH  "_charmonizer_target"
 #define CHAZ_OS_NAME_MAX     31
 
+/* Running POSIX sh via cmd.exe causes problems with MSYS path conversion. */
+/* #define CHAZ_SH_VIA_CMD_EXE */
+
 static struct {
     char name[CHAZ_OS_NAME_MAX+1];
     char dev_null[20];
     char dir_sep[2];
     char local_command_start[3];
     int  shell_type;
+#ifdef CHAZ_SH_VIA_CMD_EXE
     int  run_sh_via_cmd_exe;
-} chaz_OS = { "", "", "", "", 0, 0 };
+#endif
+} chaz_OS = { "", "", "", "", 0
+#ifdef CHAZ_SH_VIA_CMD_EXE
+    , 0
+#endif
+};
 
+#ifdef CHAZ_SH_VIA_CMD_EXE
 static int
 chaz_OS_run_sh_via_cmd_exe(const char *command, const char *path);
+#endif
 
 void
 chaz_OS_init(void) {
@@ -63,6 +74,7 @@ chaz_OS_init(void) {
             printf("Detected cmd.exe shell\n");
         }
 
+#ifdef CHAZ_SH_VIA_CMD_EXE
         /* Try to see whether running commands via the `sh` command works.
          * Run the `find` command to check whether we're in a somewhat POSIX
          * compatible environment. */
@@ -83,6 +95,10 @@ chaz_OS_init(void) {
             chaz_OS.shell_type = CHAZ_OS_CMD_EXE;
             chaz_OS.run_sh_via_cmd_exe = 0;
         }
+#else
+        chaz_OS.shell_type = CHAZ_OS_CMD_EXE;
+#endif
+
 
         /* Redirection is always run through cmd.exe. */
         strcpy(chaz_OS.dev_null, "nul");
@@ -209,9 +225,11 @@ int
 chaz_OS_run_redirected(const char *command, const char *path) {
     int retval = 1;
     char *quiet_command = NULL;
+#ifdef CHAZ_SH_VIA_CMD_EXE
     if (chaz_OS.run_sh_via_cmd_exe) {
         return chaz_OS_run_sh_via_cmd_exe(command, path);
     }
+#endif
     if (chaz_OS.shell_type == CHAZ_OS_POSIX
         || chaz_OS.shell_type == CHAZ_OS_CMD_EXE
         ) {
@@ -225,6 +243,7 @@ chaz_OS_run_redirected(const char *command, const char *path) {
     return retval;
 }
 
+#ifdef CHAZ_SH_VIA_CMD_EXE
 static int
 chaz_OS_run_sh_via_cmd_exe(const char *command, const char *path) {
     size_t i;
@@ -303,6 +322,7 @@ chaz_OS_run_sh_via_cmd_exe(const char *command, const char *path) {
     free(escaped_command);
     return retval;
 }
+#endif
 
 char*
 chaz_OS_run_and_capture(const char *command, size_t *output_len) {
